@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4fae9a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<title>يومي بلطف</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--text:#2b2b2b;--mute:#7a7a7a;--line:#ece6dc;--work:#6b8fd6;--sleep:#8a8fd6;--faith:#4fae9a;--learn:#b48ad6;--home:#e0a05a;--family:#e58aa0;--rest:#9aa7b5;--gym:#e5675a}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1b1a;--card:#262524;--text:#eee;--mute:#a09d98;--line:#383634;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif;line-height:1.6;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+main,#welcome{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.4rem;margin:4px 0}
+.sub{color:var(--mute);margin:0 0 12px;font-size:.95rem}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px}
+.tab{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:6px 12px;font-size:.9rem}
+.tab.on{background:var(--faith);color:#fff;border-color:var(--faith)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+.bar{display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:10px;font-size:.8rem;color:var(--mute)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:4px}
+.note{color:var(--mute);font-size:.9rem;margin:0 0 8px}
+.item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item input[type=checkbox]{width:20px;height:20px;accent-color:var(--faith);margin-top:4px}
+.tag{width:6px;align-self:stretch;border-radius:3px}
+.body{flex:1;min-width:0}
+.done input.name{text-decoration:line-through;color:var(--mute)}
+input.name{width:100%;border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;padding:0 0 2px;font:inherit;font-weight:600;color:var(--text)}
+.meta{font-size:.8rem;color:var(--mute);display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+.tc{display:inline-flex;align-items:center;gap:2px;direction:ltr}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:8px 12px}
+.del{background:transparent;color:var(--mute);font-size:1.1rem}
+.big{background:var(--faith);color:#fff;width:100%;margin-top:8px;font-weight:600;padding:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+input,select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px;min-width:0}
+.tc select,.meta select{padding:2px;font-size:.85rem}
+.row input[type=text]{flex:1}
+.ghost{background:transparent;color:var(--mute);font-size:.85rem;display:block;margin:6px auto 0}
+.empty{color:var(--mute);text-align:center;padding:12px}
+</style>
+</head>
+<body>
+<div id="welcome" hidden>
+<h1>أهلًا فيك 🌿</h1>
+<p class="sub">جدول أسبوعي لطيف: عمل، نوم، عبادة، تعلّم، وبيت. يومين العطلة للراحة ووقت العائلة. شو أيام عطلتك؟</p>
+<button class="big" id="w1">الجمعة والسبت</button>
+<button class="big" id="w2">السبت والأحد</button>
+<p class="sub" style="margin-top:14px">بياناتك بتنحفظ على جهازك بس.</p>
+</div>
+<main id="main" hidden>
+<h1>يومي بلطف 🌿</h1>
+<p class="sub">عدّلي الاسم والوقت والمدة من جنب كل مهمة.</p>
+<div class="tabs" id="tabs"></div>
+<div class="card"><div class="bar" id="bar"></div><div class="legend" id="legend"></div></div>
+<div class="card" id="list"></div>
+<div class="card">
+<div class="row"><input type="text" id="n" placeholder="شو بدك تضيفي؟" maxlength="60"></div>
+<div class="row"><span id="tslot"></span><span id="dslot"></span><select id="c"></select></div>
+<button class="big" id="add">إضافة لهذا اليوم</button>
+</div>
+<button class="ghost" id="install" hidden>تثبيت التطبيق على الشاشة الرئيسية</button>
+<button class="ghost" id="newweek">أسبوع جديد (إزالة العلامات)</button>
+<button class="ghost" id="restart">تغيير أيام العطلة وإعادة الجدول</button>
+</main>
+<script>
+var CATS={work:["عمل","--work"],sleep:["نوم","--sleep"],faith:["عبادة","--faith"],learn:["تعلّم","--learn"],home:["بيت","--home"],family:["عائلة","--family"],rest:["راحة","--rest"],gym:["رياضة","--gym"]};
+var DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+var KEY="planner-app-v1",uid=1,data=null,cur=new Date().getDay();
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function v(k){return "var("+k+")"}
+function mk(t,d,n,c){return {id:uid++,t:t,d:d,n:n,c:c,x:false}}
+function workDay(){return [mk("06:00",60,"استيقاظ وتجهّز","rest"),mk("07:00",30,"وقت عبادة وأذكار","faith"),mk("07:30",30,"الطريق للعمل","rest"),mk("08:00",300,"دوام","work"),mk("13:00",60,"غداء واستراحة","rest"),mk("14:00",180,"دوام","work"),mk("17:00",60,"الطريق للبيت","rest"),mk("18:00",60,"رياضة أو مشي","gym"),mk("19:00",60,"عشاء مع العائلة","family"),mk("20:00",60,"وقت تعلّم","learn"),mk("21:00",30,"ترتيب البيت","home"),mk("21:30",30,"وقت عبادة","faith"),mk("22:00",30,"راحة وتهدئة","rest"),mk("22:30",450,"نوم 😴","sleep")]}
+function offDay(){return [mk("08:00",90,"استيقاظ وفطور هادي","rest"),mk("09:30",30,"وقت عبادة","faith"),mk("10:00",90,"ترتيب البيت","home"),mk("11:30",90,"راحة","rest"),mk("13:00",90,"غداء مع العائلة","family"),mk("14:30",90,"قيلولة وراحة","rest"),mk("16:00",180,"وقت العائلة","family"),mk("19:00",90,"راحة ومزاج","rest"),mk("20:30",30,"تعلّم خفيف (اختياري)","learn"),mk("21:00",30,"وقت عبادة","faith"),mk("22:30",450,"نوم 😴","sleep")]}
+function build(we){var w={};for(var i=0;i<7;i++)w[i]=we.indexOf(i)>=0?offDay():workDay();data={we:we,w:w};save()}
+function load(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&s.w){data=s;uid=s.u||1000}}catch(e){}}
+function save(){try{if(data){data.u=uid;localStorage.setItem(KEY,JSON.stringify(data))}}catch(e){}}
+function dlabel(m){if(m===0)return "بدون مدة";if(m%30)return m+" دقيقة";var h=Math.floor(m/60),half=m%60===30;if(h===0)return "نصف ساعة";var s=h===1?"ساعة":h===2?"ساعتين":h+(h<=10?" ساعات":" ساعة");return s+(half?" ونص":"")}
+function durCtrl(val,cb){var s=el("select"),arr=[],m;for(m=0;m<=720;m+=30)arr.push(m);if(arr.indexOf(val)<0){arr.push(val);arr.sort(function(a,b){return a-b})}arr.forEach(function(x){var o=el("option","",dlabel(x));o.value=x;s.appendChild(o)});s.value=val;s.onchange=function(){cb(parseInt(s.value,10))};return s}
+function to12(t){var p=t.split(":"),h=+p[0],m=+p[1];return {h:h%12===0?12:h%12,m:m,pm:h>=12}}
+function to24(h,m,pm){h=h%12;if(pm)h+=12;return (h<10?"0":"")+h+":"+(m<10?"0":"")+m}
+function timeCtrl(val,cb){var o=to12(val),w=el("span","tc"),hs=el("select"),ms=el("select"),ps=el("select"),i,op;
+ for(i=1;i<=12;i++){op=el("option","",String(i));op.value=i;hs.appendChild(op)}
+ for(i=0;i<60;i+=5){op=el("option","",(i<10?"0":"")+i);op.value=i;ms.appendChild(op)}
+ if(o.m%5){op=el("option","",(o.m<10?"0":"")+o.m);op.value=o.m;ms.appendChild(op)}
+ [["AM","0"],["PM","1"]].forEach(function(p){op=el("option","",p[0]);op.value=p[1];ps.appendChild(op)});
+ hs.value=o.h;ms.value=o.m;ps.value=o.pm?"1":"0";
+ function get(){return to24(+hs.value,+ms.value,ps.value==="1")}
+ hs.onchange=ms.onchange=ps.onchange=function(){cb(get())};
+ w.appendChild(hs);w.appendChild(document.createTextNode(":"));w.appendChild(ms);w.appendChild(ps);w.getVal=get;return w}
+function render(){
+ var ok=data&&data.w;
+ document.getElementById("welcome").hidden=!!ok;document.getElementById("main").hidden=!ok;
+ if(!ok)return;
+ var tabs=document.getElementById("tabs");tabs.textContent="";
+ [0,1,2,3,4,5,6].forEach(function(i){
+  var b=el("button","tab"+(i===cur?" on":""),DAYS[i]+(data.we.indexOf(i)>=0?" 🌿":""));
+  b.onclick=function(){cur=i;render()};tabs.appendChild(b)});
+ var items=data.w[cur];
+ items.sort(function(a,b){return a.t<b.t?-1:a.t>b.t?1:0});
+ var list=document.getElementById("list");list.textContent="";
+ if(data.we.indexOf(cur)>=0)list.appendChild(el("p","note","يوم عطلة: راحة ووقت للعائلة."));
+ if(!items.length)list.appendChild(el("div","empty","اليوم فاضي. أضيفي أول شي 🌱"));
+ var tot={},sum=0;
+ items.forEach(function(it){
+  tot[it.c]=(tot[it.c]||0)+it.d;sum+=it.d;
+  var r=el("div","item"+(it.x?" done":""));
+  var cb=el("input");cb.type="checkbox";cb.checked=it.x;
+  cb.onchange=function(){it.x=cb.checked;save();render()};
+  var tg=el("div","tag");tg.style.background=v(CATS[it.c][1]);
+  var b=el("div","body");
+  var ni=el("input","name");ni.type="text";ni.value=it.n;ni.maxLength=60;ni.setAttribute("aria-label","اسم المهمة");
+  ni.onchange=function(){var s=ni.value.trim();if(s){it.n=s;save();render()}else{ni.value=it.n}};
+  b.appendChild(ni);
+  var mt=el("div","meta");
+  mt.appendChild(timeCtrl(it.t,function(x){it.t=x;save();render()}));
+  mt.appendChild(document.createTextNode("· "+CATS[it.c][0]+" ·"));
+  mt.appendChild(durCtrl(it.d,function(x){it.d=x;save();render()}));
+  b.appendChild(mt);
+  var dl=el("button","del","×");dl.setAttribute("aria-label","حذف");
+  dl.onclick=function(){data.w[cur]=data.w[cur].filter(function(z){return z.id!==it.id});save();render()};
+  r.appendChild(cb);r.appendChild(tg);r.appendChild(b);r.appendChild(dl);list.appendChild(r)});
+ var bar=document.getElementById("bar"),lg=document.getElementById("legend");bar.textContent="";lg.textContent="";
+ Object.keys(CATS).forEach(function(k){var m=tot[k]||0;if(!m)return;
+  var s=el("div");s.style.width=(m/sum*100)+"%";s.style.background=v(CATS[k][1]);bar.appendChild(s);
+  var l=el("span"),d=el("span","dot");d.style.background=v(CATS[k][1]);
+  l.appendChild(d);l.appendChild(document.createTextNode(CATS[k][0]+" "+(Math.round(m/6)/10)+" س"));lg.appendChild(l)});
+}
+var sel=document.getElementById("c");
+Object.keys(CATS).forEach(function(k){var o=el("option","",CATS[k][0]);o.value=k;sel.appendChild(o)});
+var addT=timeCtrl("19:00",function(){}),addD=durCtrl(30,function(){});
+document.getElementById("tslot").appendChild(addT);document.getElementById("dslot").appendChild(addD);
+document.getElementById("add").onclick=function(){
+ var n=document.getElementById("n").value.trim();if(!n)return;
+ data.w[cur].push(mk(addT.getVal(),parseInt(addD.value,10)||0,n,sel.value));
+ document.getElementById("n").value="";save();render()};
+document.getElementById("w1").onclick=function(){build([5,6]);render()};
+document.getElementById("w2").onclick=function(){build([6,0]);render()};
+document.getElementById("newweek").onclick=function(){if(confirm("تبدأي أسبوع جديد؟ رح تنمسح العلامات وتضل تعديلاتك.")){for(var i=0;i<7;i++)data.w[i].forEach(function(z){z.x=false});save();render()}};
+document.getElementById("restart").onclick=function(){if(confirm("رح ترجعي للجدول الأصلي وتمسحي تعديلاتك. متأكدة؟")){data=null;try{localStorage.removeItem(KEY)}catch(e){}render()}};
+var dp,ib=document.getElementById("install");
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.hidden=false});
+ib.onclick=function(){if(dp){dp.prompt();dp=null;ib.hidden=true}};
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+load();render();
+</script>
+</body>
+</html>
